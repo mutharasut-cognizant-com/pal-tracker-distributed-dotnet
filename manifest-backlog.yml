@@ -10,3 +10,4 @@ applications:
     REGISTRATION_SERVER_ENDPOINT: http://registration-pal-muthu.apps.pikes.pal.pivotal.io/
   services:
   - tracker-backlog-database
+  - tracker-service-registry
