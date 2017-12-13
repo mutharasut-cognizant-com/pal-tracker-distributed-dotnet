@@ -4,9 +4,9 @@ applications:
   buildpack: https://github.com/cloudfoundry/dotnet-core-buildpack#v1.0.31
   instances: 1
   memory: 256M
-  host: registration-pal-tm
+  host: registration-pal-muthu
   path: Applications/RegistrationServer/bin/Release/netcoreapp2.0/publish
   env:
-    REGISTRATION_SERVER_ENDPOINT: http://registration-pal-tm.apps.pikes.pal.pivotal.io
+    REGISTRATION_SERVER_ENDPOINT: http://registration-pal-muthu.apps.pikes.pal.pivotal.io
   services:
   - tracker-registration-database
