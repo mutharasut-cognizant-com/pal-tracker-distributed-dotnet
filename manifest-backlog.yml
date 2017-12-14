@@ -7,9 +7,10 @@ applications:
   host: backlog-pal-muthu
   path: Applications/BacklogServer/bin/Release/netcoreapp2.0/publish
   env:
-    REGISTRATION_SERVER_ENDPOINT: http://registration-pal-muthu.apps.pikes.pal.pivotal.io/
+    GRANT_TYPE: client_credentials
   services:
   - tracker-backlog-database
   - tracker-service-registry
   - tracker-circuit-breaker-dashboard
   - tracker-amqp
+  - tracker-sso

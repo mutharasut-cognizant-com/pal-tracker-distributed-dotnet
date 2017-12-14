@@ -1,15 +1,20 @@
 ﻿using System;
 using System.Net.Http;
+using AuthDisabler;
 using Backlog;
 using DatabaseSupport;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Pivotal.Discovery.Client;
-using Steeltoe.Extensions.Configuration;
 using Steeltoe.CircuitBreaker.Hystrix;
+using Steeltoe.Extensions.Configuration;
+using Steeltoe.Security.Authentication.CloudFoundry;
 
 
 namespace BacklogServer
@@ -36,22 +41,36 @@ namespace BacklogServer
             services.AddMvc();
             services.AddDiscoveryClient(Configuration);
             services.AddHystrixMetricsStream(Configuration);
+            services.AddCloudFoundryJwtAuthentication(Configuration);
+
+            if (Configuration.GetValue("DISABLE_AUTH", false))
+            {
+                services.AddSingleton<IAuthorizationHandler>(sp => new AllowAllClaimsAuthorizationHandler());
+            }
 
             services.AddSingleton<IDataSourceConfig, DataSourceConfig>();
             services.AddSingleton<IDatabaseTemplate, DatabaseTemplate>();
             services.AddSingleton<IStoryDataGateway, StoryDataGateway>();
-            
+
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddSingleton<IProjectClient>(sp =>
             {
                 var handler = new DiscoveryHttpClientHandler(sp.GetService<IDiscoveryClient>());
-                var httpClient = new HttpClient(handler, false)                
+                var httpClient = new HttpClient(handler, false)
                 {
                     BaseAddress = new Uri(Configuration.GetValue<string>("REGISTRATION_SERVER_ENDPOINT"))
                 };
 
                 var logger = sp.GetService<ILogger<ProjectClient>>();
-                return new ProjectClient(httpClient, logger);            
+                var contextAccessor = sp.GetService<IHttpContextAccessor>();
+
+                return new ProjectClient(
+                    httpClient, logger,
+                    () => contextAccessor.HttpContext.Authentication.GetTokenAsync("access_token"));
             });
+
+            services.AddAuthorization(options =>
+            options.AddPolicy("pal-dotnet", policy => policy.RequireClaim("scope", "uaa.resource")));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -59,6 +78,8 @@ namespace BacklogServer
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
+
+            app.UseCloudFoundryJwtAuthentication();
 
             app.UseMvc();
             app.UseDiscoveryClient();

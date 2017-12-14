@@ -7,9 +7,10 @@ applications:
   host: timesheets-pal-muthu
   path: Applications/TimesheetsServer/bin/Release/netcoreapp2.0/publish
   env:
-    REGISTRATION_SERVER_ENDPOINT: http://registration-pal-muthu.apps.pikes.pal.pivotal.io/
+    GRANT_TYPE: client_credentials
   services:
   - tracker-timesheets-database
   - tracker-service-registry
   - tracker-circuit-breaker-dashboard
   - tracker-amqp
+  - tracker-sso

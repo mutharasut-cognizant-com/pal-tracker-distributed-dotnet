@@ -1,14 +1,17 @@
 ﻿using Accounts;
+using AuthDisabler;
 using DatabaseSupport;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Projects;
-using Users;
 using Pivotal.Discovery.Client;
+using Projects;
 using Steeltoe.Extensions.Configuration;
+using Steeltoe.Security.Authentication.CloudFoundry;
+using Users;
 
 namespace RegistrationServer
 {
@@ -33,12 +36,22 @@ namespace RegistrationServer
             // Add framework services.
             services.AddMvc();
             services.AddDiscoveryClient(Configuration);
+            services.AddCloudFoundryJwtAuthentication(Configuration);
+
+            if (Configuration.GetValue("DISABLE_AUTH", false))
+            {
+                services.AddSingleton<IAuthorizationHandler>(sp => new AllowAllClaimsAuthorizationHandler());
+            }
+
             services.AddSingleton<IDataSourceConfig, DataSourceConfig>();
             services.AddSingleton<IDatabaseTemplate, DatabaseTemplate>();
             services.AddSingleton<IAccountDataGateway, AccountDataGateway>();
             services.AddSingleton<IProjectDataGateway, ProjectDataGateway>();
             services.AddSingleton<IUserDataGateway, UserDataGateway>();
             services.AddSingleton<IRegistrationService, RegistrationService>();
+
+            services.AddAuthorization(options =>
+            options.AddPolicy("pal-dotnet", policy => policy.RequireClaim("scope", "uaa.resource")));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -46,6 +59,8 @@ namespace RegistrationServer
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
+
+            app.UseCloudFoundryJwtAuthentication();
 
             app.UseMvc();
             app.UseDiscoveryClient();

@@ -33,7 +33,7 @@ namespace BacklogTest
 
             var controller =
                 new StoryController(new StoryDataGateway(new DatabaseTemplate(_dataSourceConfig)),
-                                    new ProjectClient(_client, new LoggerFactory().CreateLogger<ProjectClient>()));
+                                    new ProjectClient(_client, new LoggerFactory().CreateLogger<ProjectClient>(), () => Task.FromResult("anAccessToken")));
 
             var value = controller.Post(new StoryInfo(-1, 55432, "An epic story", ""));
             var actual = (StoryInfo) ((ObjectResult) value).Value;
@@ -51,7 +51,7 @@ namespace BacklogTest
 
             var controller =
                 new StoryController(new StoryDataGateway(new DatabaseTemplate(_dataSourceConfig)),
-                                    new ProjectClient(_client, new LoggerFactory().CreateLogger<ProjectClient>()));
+                                    new ProjectClient(_client, new LoggerFactory().CreateLogger<ProjectClient>(), () => Task.FromResult("anAccessToken")));
             var result = controller.Get(55432);
 
             // todo...
